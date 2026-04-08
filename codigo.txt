@@ -1,0 +1,3062 @@
+
+================================================================================
+ARQUIVO: checklist\index.php
+================================================================================
+
+<?php require_once __DIR__ . '/includes/header.php'; ?>
+
+    <!-- Date Navigation -->
+    <div class="date-nav">
+        <button class="date-btn" id="btn-prev" title="Dia anterior">‹</button>
+        <div class="date-center">
+            <span class="date-label" id="date-label"></span>
+            <span class="date-badge" id="date-badge"></span>
+        </div>
+        <button class="date-btn" id="btn-next" title="Próximo dia">›</button>
+    </div>
+
+    <!-- Progress -->
+    <div id="progress"></div>
+
+    <!-- Copy Yesterday -->
+    <div id="copy-section"></div>
+
+    <!-- Add Task -->
+    <form id="add-form" class="add-form" autocomplete="off">
+        <div class="add-row">
+            <input type="text" id="input-title" 
+                   placeholder="Nova tarefa..." maxlength="150">
+            <button type="button" class="btn-toggle-opts" id="btn-opts" title="Opções">▾</button>
+            <button type="submit" class="btn btn-primary btn-icon" title="Adicionar">+</button>
+        </div>
+        <div class="add-opts" id="add-opts">
+            <select id="input-category" class="form-field" title="Setor">
+                <option value="">Setor</option>
+            </select>
+            <select id="input-group" class="form-field" title="Grupo">
+                <option value="">Grupo</option>
+            </select>
+            <select id="input-priority" class="form-field" title="Prioridade">
+                <option value="normal">Prioridade</option>
+                <option value="high">🔴 Alta</option>
+                <option value="low">🔵 Baixa</option>
+            </select>
+            <button type="button" class="form-field time-trigger" id="input-time" onclick="openTimePicker(this)">
+                <span class="time-trigger-text">🕐 Horário</span>
+            </button>
+        </div>
+    </form>
+
+    <!-- Filter -->
+    <div id="filter-bar" class="filter-bar"></div>
+
+    <!-- Task List -->
+    <ul id="task-list" class="task-list"></ul>
+
+    <!-- Clear completed -->
+    <div id="clear-section"></div>
+
+    <!-- Categories Modal -->
+    <div class="modal-overlay" id="modal-cats">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Gerenciar Setores</h2>
+                <button class="modal-close" onclick="closeModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="cat-form" class="cat-form" autocomplete="off">
+                    <input type="text" id="cat-name" placeholder="Nome do setor" maxlength="40">
+                    <input type="color" id="cat-color" value="#3B82F6" class="color-picker">
+                    <button type="submit" class="btn btn-primary btn-sm" id="cat-form-btn">Adicionar</button>
+                </form>
+                <ul id="cat-list" class="cat-list"></ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workers Modal -->
+    <div class="modal-overlay" id="modal-workers">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Funcionários</h2>
+                <button class="modal-close" onclick="closeWorkersModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="worker-form" class="cat-form" autocomplete="off">
+                    <input type="text" id="worker-name" placeholder="Nome do funcionário" maxlength="40">
+                    <button type="submit" class="btn btn-primary btn-sm">Adicionar</button>
+                </form>
+                <ul id="worker-list" class="cat-list"></ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Worker Picker (for toggle) -->
+    <div class="modal-overlay" id="modal-picker">
+        <div class="modal modal-sm">
+            <div class="modal-header">
+                <h2 class="modal-title">Quem concluiu?</h2>
+                <button class="modal-close" onclick="closePickerModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div id="picker-list" class="picker-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Log Modal -->
+    <div class="modal-overlay" id="modal-log">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Histórico</h2>
+                <button class="modal-close" onclick="closeLogModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <ul id="log-list" class="log-list"></ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Groups Modal -->
+    <div class="modal-overlay" id="modal-groups">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Grupos de Tarefas</h2>
+                <button class="modal-close" onclick="closeGroupsModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="group-form" class="cat-form" autocomplete="off">
+                    <input type="text" id="group-name" placeholder="Nome do grupo" maxlength="40">
+                    <button type="submit" class="btn btn-primary btn-sm" id="group-form-btn">Adicionar</button>
+                </form>
+                <ul id="group-list" class="cat-list"></ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recurring Modal -->
+    <div class="modal-overlay" id="modal-recurring">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h2 class="modal-title">Tarefas Recorrentes</h2>
+                <button class="modal-close" onclick="closeRecurringModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="rec-form" class="rec-form" autocomplete="off">
+                    <input type="text" id="rec-title" placeholder="Título da tarefa" maxlength="150" class="form-field">
+                    <div class="rec-row">
+                        <select id="rec-category" class="form-field"><option value="">Setor</option></select>
+                        <select id="rec-group" class="form-field"><option value="">Grupo</option></select>
+                    </div>
+                    <div class="rec-row">
+                        <select id="rec-priority" class="form-field">
+                            <option value="normal">Prioridade</option>
+                            <option value="high">🔴 Alta</option>
+                            <option value="low">🔵 Baixa</option>
+                        </select>
+                        <button type="button" class="form-field time-trigger" id="rec-time" onclick="openTimePicker(this)">
+                            <span class="time-trigger-text">🕐 Horário</span>
+                        </button>
+                    </div>
+                    <div class="rec-days">
+                        <label class="day-check"><input type="checkbox" value="0"><span>Dom</span></label>
+                        <label class="day-check"><input type="checkbox" value="1" checked><span>Seg</span></label>
+                        <label class="day-check"><input type="checkbox" value="2" checked><span>Ter</span></label>
+                        <label class="day-check"><input type="checkbox" value="3" checked><span>Qua</span></label>
+                        <label class="day-check"><input type="checkbox" value="4" checked><span>Qui</span></label>
+                        <label class="day-check"><input type="checkbox" value="5" checked><span>Sex</span></label>
+                        <label class="day-check"><input type="checkbox" value="6"><span>Sáb</span></label>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm btn-full" id="rec-form-btn">Adicionar recorrente</button>
+                </form>
+                <ul id="rec-list" class="rec-list"></ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scroll Time Picker -->
+    <div class="modal-overlay" id="modal-time-picker">
+        <div class="modal modal-sm">
+            <div class="modal-header">
+                <h2 class="modal-title">Selecionar horário</h2>
+                <button class="modal-close" onclick="closeTimePicker()">✕</button>
+            </div>
+            <div class="modal-body tp-body">
+                <div class="tp-display" id="tp-display">--:--</div>
+                <div class="tp-columns">
+                    <div class="tp-col">
+                        <div class="tp-col-label">Hora</div>
+                        <div class="tp-scroll" id="tp-hours"></div>
+                    </div>
+                    <div class="tp-sep">:</div>
+                    <div class="tp-col">
+                        <div class="tp-col-label">Min</div>
+                        <div class="tp-scroll" id="tp-minutes"></div>
+                    </div>
+                </div>
+                <div class="tp-actions">
+                    <button class="confirm-btn cancel" onclick="clearTimePicker()">Limpar</button>
+                    <button class="confirm-btn danger" style="background:var(--primary)" onclick="confirmTimePicker()">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<?php require_once __DIR__ . '/includes/footer.php'; ?>
+
+
+
+================================================================================
+ARQUIVO: checklist\api\categories.php
+================================================================================
+
+<?php
+
+header('Content-Type: application/json');
+
+require_once __DIR__ . '/../config/database.php';
+
+$db = getDB();
+
+// ---- GET: list categories ----
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $stmt = $db->query("SELECT * FROM categories ORDER BY sort_order ASC, id ASC");
+    $cats = $stmt->fetchAll();
+
+    $cats = array_map(function ($row) {
+        $row['id'] = (int) $row['id'];
+        $row['sort_order'] = (int) $row['sort_order'];
+        return $row;
+    }, $cats);
+
+    echo json_encode(['categories' => $cats]);
+    exit;
+}
+
+// ---- POST: add / edit / delete ----
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $input  = json_decode(file_get_contents('php://input'), true);
+    $action = $input['action'] ?? '';
+
+    switch ($action) {
+        case 'add':
+            $name  = trim($input['name'] ?? '');
+            $color = trim($input['color'] ?? '#64748B');
+            if ($name === '') {
+                echo json_encode(['success' => false, 'error' => 'Nome obrigatório']);
+                exit;
+            }
+
+            $stmt = $db->prepare("INSERT INTO categories (name, color, sort_order) VALUES (:n, :c, (SELECT COALESCE(MAX(sort_order),0)+1 FROM categories))");
+            $stmt->execute([':n' => $name, ':c' => $color]);
+            echo json_encode(['success' => true, 'id' => (int) $db->lastInsertId()]);
+            break;
+
+        case 'edit':
+            $id    = (int) ($input['id'] ?? 0);
+            $name  = trim($input['name'] ?? '');
+            $color = trim($input['color'] ?? '#64748B');
+            if ($name === '') {
+                echo json_encode(['success' => false, 'error' => 'Nome obrigatório']);
+                exit;
+            }
+
+            $stmt = $db->prepare("UPDATE categories SET name = :n, color = :c WHERE id = :id");
+            $stmt->execute([':n' => $name, ':c' => $color, ':id' => $id]);
+            echo json_encode(['success' => true]);
+            break;
+
+        case 'delete':
+            $id   = (int) ($input['id'] ?? 0);
+            $stmt = $db->prepare("DELETE FROM categories WHERE id = :id");
+            $stmt->execute([':id' => $id]);
+            echo json_encode(['success' => true]);
+            break;
+
+        default:
+            echo json_encode(['success' => false, 'error' => 'Ação inválida']);
+    }
+    exit;
+}
+
+http_response_code(405);
+echo json_encode(['error' => 'Método não permitido']);
+
+
+
+================================================================================
+ARQUIVO: checklist\api\groups.php
+================================================================================
+
+<?php
+
+header('Content-Type: application/json');
+
+require_once __DIR__ . '/../config/database.php';
+
+$db = getDB();
+
+// ---- GET: list groups ----
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $stmt = $db->query("SELECT * FROM task_groups ORDER BY sort_order ASC, id ASC");
+    $groups = $stmt->fetchAll();
+    $groups = array_map(fn($r) => ['id' => (int)$r['id'], 'name' => $r['name'], 'sort_order' => (int)$r['sort_order']], $groups);
+    echo json_encode(['groups' => $groups]);
+    exit;
+}
+
+// ---- POST ----
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $input  = json_decode(file_get_contents('php://input'), true);
+    $action = $input['action'] ?? '';
+
+    switch ($action) {
+        case 'add':
+            $name = trim($input['name'] ?? '');
+            if ($name === '') { echo json_encode(['success' => false, 'error' => 'Nome obrigatório']); exit; }
+            $stmt = $db->prepare("INSERT INTO task_groups (name, sort_order) VALUES (:n, (SELECT COALESCE(MAX(sort_order),0)+1 FROM task_groups))");
+            $stmt->execute([':n' => $name]);
+            echo json_encode(['success' => true, 'id' => (int)$db->lastInsertId()]);
+            break;
+
+        case 'edit':
+            $id   = (int)($input['id'] ?? 0);
+            $name = trim($input['name'] ?? '');
+            if ($name === '') { echo json_encode(['success' => false, 'error' => 'Nome obrigatório']); exit; }
+            $stmt = $db->prepare("UPDATE task_groups SET name = :n WHERE id = :id");
+            $stmt->execute([':n' => $name, ':id' => $id]);
+            echo json_encode(['success' => true]);
+            break;
+
+        case 'delete':
+            $id = (int)($input['id'] ?? 0);
+            $db->prepare("DELETE FROM task_groups WHERE id = :id")->execute([':id' => $id]);
+            echo json_encode(['success' => true]);
+            break;
+
+        default:
+            echo json_encode(['success' => false, 'error' => 'Ação inválida']);
+    }
+    exit;
+}
+
+http_response_code(405);
+echo json_encode(['error' => 'Método não permitido']);
+
+
+
+================================================================================
+ARQUIVO: checklist\api\items.php
+================================================================================
+
+<?php
+
+header('Content-Type: application/json');
+
+require_once __DIR__ . '/../config/database.php';
+
+$db = getDB();
+
+// GET — list all items
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $stmt  = $db->query("SELECT * FROM items ORDER BY checked ASC, created_at DESC");
+    $items = $stmt->fetchAll();
+
+    // cast types for JS
+    $items = array_map(function ($row) {
+        $row['id']       = (int) $row['id'];
+        $row['quantity'] = (int) $row['quantity'];
+        $row['checked']  = (bool) $row['checked'];
+        return $row;
+    }, $items);
+
+    echo json_encode(['items' => $items]);
+    exit;
+}
+
+// POST — add / toggle / delete
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $input  = json_decode(file_get_contents('php://input'), true);
+    $action = $input['action'] ?? '';
+
+    switch ($action) {
+        case 'add':
+            $name = trim($input['name'] ?? '');
+            $qty  = max(1, (int) ($input['quantity'] ?? 1));
+
+            if ($name === '') {
+                echo json_encode(['success' => false, 'error' => 'Nome obrigatório']);
+                exit;
+            }
+
+            $stmt = $db->prepare("INSERT INTO items (name, quantity) VALUES (:name, :qty)");
+            $stmt->execute([':name' => $name, ':qty' => $qty]);
+
+            echo json_encode(['success' => true, 'id' => (int) $db->lastInsertId()]);
+            break;
+
+        case 'toggle':
+            $id   = (int) ($input['id'] ?? 0);
+            $stmt = $db->prepare("UPDATE items SET checked = NOT checked WHERE id = :id");
+            $stmt->execute([':id' => $id]);
+
+            echo json_encode(['success' => true]);
+            break;
+
+        case 'delete':
+            $id   = (int) ($input['id'] ?? 0);
+            $stmt = $db->prepare("DELETE FROM items WHERE id = :id");
+            $stmt->execute([':id' => $id]);
+
+            echo json_encode(['success' => true]);
+            break;
+
+        default:
+            echo json_encode(['success' => false, 'error' => 'Ação inválida']);
+    }
+    exit;
+}
+
+http_response_code(405);
+echo json_encode(['error' => 'Método não permitido']);
+
+
+
+================================================================================
+ARQUIVO: checklist\api\recurring.php
+================================================================================
+
+<?php
+
+header('Content-Type: application/json');
+
+require_once __DIR__ . '/../config/database.php';
+
+$db = getDB();
+
+// ---- GET: list recurring tasks ----
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $stmt = $db->query("
+        SELECT r.*, c.name AS cat_name, c.color AS cat_color, g.name AS group_name
+        FROM recurring_tasks r
+        LEFT JOIN categories c ON r.category_id = c.id
+        LEFT JOIN task_groups g ON r.group_id = g.id
+        ORDER BY r.id ASC
+    ");
+    $items = $stmt->fetchAll();
+    $items = array_map(function ($r) {
+        $r['id']          = (int)$r['id'];
+        $r['category_id'] = $r['category_id'] ? (int)$r['category_id'] : null;
+        $r['group_id']    = $r['group_id'] ? (int)$r['group_id'] : null;
+        $r['active']      = (bool)$r['active'];
+        return $r;
+    }, $items);
+    echo json_encode(['recurring' => $items]);
+    exit;
+}
+
+// ---- POST ----
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $input  = json_decode(file_get_contents('php://input'), true);
+    $action = $input['action'] ?? '';
+
+    switch ($action) {
+        case 'add':
+            $title    = trim($input['title'] ?? '');
+            $catId    = !empty($input['category_id']) ? (int)$input['category_id'] : null;
+            $groupId  = !empty($input['group_id']) ? (int)$input['group_id'] : null;
+            $priority = in_array($input['priority'] ?? '', ['high','normal','low']) ? $input['priority'] : 'normal';
+            $sched    = !empty($input['scheduled_time']) ? $input['scheduled_time'] : null;
+            $days     = $input['days_of_week'] ?? '1,2,3,4,5';
+
+            if ($title === '') { echo json_encode(['success' => false, 'error' => 'Título obrigatório']); exit; }
+
+            // Validate days format
+            $days = implode(',', array_filter(array_map('intval', explode(',', $days))));
+            if ($days === '') $days = '1,2,3,4,5';
+
+            $stmt = $db->prepare("INSERT INTO recurring_tasks (title, category_id, group_id, priority, scheduled_time, days_of_week) VALUES (:t,:c,:g,:p,:s,:d)");
+            $stmt->execute([':t'=>$title, ':c'=>$catId, ':g'=>$groupId, ':p'=>$priority, ':s'=>$sched, ':d'=>$days]);
+            echo json_encode(['success' => true, 'id' => (int)$db->lastInsertId()]);
+            break;
+
+        case 'edit':
+            $id       = (int)($input['id'] ?? 0);
+            $title    = trim($input['title'] ?? '');
+            $catId    = array_key_exists('category_id', $input) ? (!empty($input['category_id']) ? (int)$input['category_id'] : null) : null;
+            $groupId  = array_key_exists('group_id', $input) ? (!empty($input['group_id']) ? (int)$input['group_id'] : null) : null;
+            $priority = in_array($input['priority'] ?? '', ['high','normal','low']) ? $input['priority'] : 'normal';
+            $sched    = !empty($input['scheduled_time']) ? $input['scheduled_time'] : null;
+            $days     = $input['days_of_week'] ?? '1,2,3,4,5';
+            $days     = implode(',', array_filter(array_map('intval', explode(',', $days))));
+
+            if ($title === '') { echo json_encode(['success' => false, 'error' => 'Título obrigatório']); exit; }
+
+            $stmt = $db->prepare("UPDATE recurring_tasks SET title=:t, category_id=:c, group_id=:g, priority=:p, scheduled_time=:s, days_of_week=:d WHERE id=:id");
+            $stmt->execute([':t'=>$title, ':c'=>$catId, ':g'=>$groupId, ':p'=>$priority, ':s'=>$sched, ':d'=>$days, ':id'=>$id]);
+            echo json_encode(['success' => true]);
+            break;
+
+        case 'toggle':
+            $id = (int)($input['id'] ?? 0);
+            $db->prepare("UPDATE recurring_tasks SET active = NOT active WHERE id = :id")->execute([':id' => $id]);
+            echo json_encode(['success' => true]);
+            break;
+
+        case 'delete':
+            $id = (int)($input['id'] ?? 0);
+            $db->prepare("DELETE FROM recurring_tasks WHERE id = :id")->execute([':id' => $id]);
+            echo json_encode(['success' => true]);
+            break;
+
+        default:
+            echo json_encode(['success' => false, 'error' => 'Ação inválida']);
+    }
+    exit;
+}
+
+http_response_code(405);
+echo json_encode(['error' => 'Método não permitido']);
+
+
+
+================================================================================
+ARQUIVO: checklist\api\tasks.php
+================================================================================
+
+<?php
+
+header('Content-Type: application/json');
+
+require_once __DIR__ . '/../config/database.php';
+
+$db   = getDB();
+$date = $_GET['date'] ?? today();
+
+// Validate date format
+if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+    $date = today();
+}
+
+// ---- GET: list tasks for a date ----
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    // Auto-generate recurring tasks for this date
+    generateRecurring($db, $date);
+
+    $stmt = $db->prepare("
+        SELECT t.*, c.name AS cat_name, c.color AS cat_color,
+               g.name AS group_name, g.sort_order AS group_order,
+               CASE t.priority 
+                   WHEN 'high'   THEN 1 
+                   WHEN 'normal' THEN 2 
+                   WHEN 'low'    THEN 3 
+                   ELSE 2 
+               END AS pri_order
+        FROM tasks t
+        LEFT JOIN categories c ON t.category_id = c.id
+        LEFT JOIN task_groups g ON t.group_id = g.id
+        WHERE t.task_date = :d
+        ORDER BY t.done ASC, g.sort_order IS NULL ASC, g.sort_order ASC, pri_order ASC, t.scheduled_time IS NULL ASC, t.scheduled_time ASC, t.id ASC
+    ");
+    $stmt->execute([':d' => $date]);
+    $tasks = $stmt->fetchAll();
+
+    $tasks = array_map(function ($row) {
+        $row['id']             = (int) $row['id'];
+        $row['done']           = (bool) $row['done'];
+        $row['category_id']    = $row['category_id'] ? (int) $row['category_id'] : null;
+        $row['group_id']       = $row['group_id'] ? (int) $row['group_id'] : null;
+        $row['group_name']     = $row['group_name'] ?? null;
+        $row['priority']       = $row['priority'] ?? 'normal';
+        $row['scheduled_time'] = $row['scheduled_time'] ?? null;
+        $row['done_by']        = $row['done_by'] ?? null;
+        $row['done_at']        = $row['done_at'] ?? null;
+        unset($row['pri_order'], $row['group_order']);
+        return $row;
+    }, $tasks);
+
+    $total = count($tasks);
+    $done  = count(array_filter($tasks, fn($t) => $t['done']));
+
+    echo json_encode([
+        'tasks'     => $tasks,
+        'total'     => $total,
+        'done'      => $done,
+        'date'      => $date,
+        'has_prev'  => hasTasks($db, prevDate($date)),
+    ]);
+    exit;
+}
+
+// ---- POST: add / toggle / delete / copy ----
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $input  = json_decode(file_get_contents('php://input'), true);
+    $action = $input['action'] ?? '';
+
+    switch ($action) {
+        case 'add':
+            $title    = trim($input['title'] ?? '');
+            $catId    = isset($input['category_id']) && $input['category_id'] !== '' ? (int) $input['category_id'] : null;
+            $groupId  = isset($input['group_id']) && $input['group_id'] !== '' ? (int) $input['group_id'] : null;
+            $priority = in_array($input['priority'] ?? '', ['high','normal','low']) ? $input['priority'] : 'normal';
+            $sched    = !empty($input['scheduled_time']) ? $input['scheduled_time'] : null;
+
+            if ($title === '') {
+                echo json_encode(['success' => false, 'error' => 'Título obrigatório']);
+                exit;
+            }
+
+            $stmt = $db->prepare(
+                "INSERT INTO tasks (title, task_date, category_id, group_id, priority, scheduled_time) VALUES (:t, :d, :c, :g, :p, :s)"
+            );
+            $stmt->execute([':t' => $title, ':d' => $date, ':c' => $catId, ':g' => $groupId, ':p' => $priority, ':s' => $sched]);
+            echo json_encode(['success' => true, 'id' => (int) $db->lastInsertId()]);
+            break;
+
+        case 'toggle':
+            $id     = (int) ($input['id'] ?? 0);
+            $worker = trim($input['worker'] ?? '');
+
+            // Get current state
+            $cur = $db->prepare("SELECT done FROM tasks WHERE id = :id");
+            $cur->execute([':id' => $id]);
+            $row = $cur->fetch();
+            if (!$row) {
+                echo json_encode(['success' => false, 'error' => 'Tarefa não encontrada']);
+                exit;
+            }
+
+            $newDone = $row['done'] ? 0 : 1;
+            $now     = date('Y-m-d H:i:s');
+
+            if ($newDone) {
+                // Marking done
+                $stmt = $db->prepare("UPDATE tasks SET done = 1, done_by = :w, done_at = :at WHERE id = :id");
+                $stmt->execute([':w' => $worker ?: null, ':at' => $now, ':id' => $id]);
+
+                // Log
+                $log = $db->prepare("INSERT INTO task_logs (task_id, action, worker) VALUES (:tid, 'done', :w)");
+                $log->execute([':tid' => $id, ':w' => $worker ?: null]);
+            } else {
+                // Undoing
+                $stmt = $db->prepare("UPDATE tasks SET done = 0, done_by = NULL, done_at = NULL WHERE id = :id");
+                $stmt->execute([':id' => $id]);
+
+                $log = $db->prepare("INSERT INTO task_logs (task_id, action, worker) VALUES (:tid, 'undone', :w)");
+                $log->execute([':tid' => $id, ':w' => $worker ?: null]);
+            }
+
+            echo json_encode(['success' => true]);
+            break;
+
+        case 'logs':
+            $id = (int) ($input['id'] ?? 0);
+            $stmt = $db->prepare("SELECT * FROM task_logs WHERE task_id = :id ORDER BY created_at DESC LIMIT 20");
+            $stmt->execute([':id' => $id]);
+            $logs = $stmt->fetchAll();
+            echo json_encode(['success' => true, 'logs' => $logs]);
+            break;
+
+        case 'delete':
+            $id   = (int) ($input['id'] ?? 0);
+            $stmt = $db->prepare("DELETE FROM tasks WHERE id = :id");
+            $stmt->execute([':id' => $id]);
+            echo json_encode(['success' => true]);
+            break;
+
+        case 'copy':
+            $from = $input['from_date'] ?? prevDate($date);
+
+            // ---- snip: same copy logic ----
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $from)) {
+                echo json_encode(['success' => false, 'error' => 'Data inválida']);
+                exit;
+            }
+
+            $stmt = $db->prepare("SELECT title, category_id, group_id, priority, scheduled_time FROM tasks WHERE task_date = :d ORDER BY id ASC");
+            $stmt->execute([':d' => $from]);
+            $prev = $stmt->fetchAll();
+
+            $ins = $db->prepare("INSERT INTO tasks (title, task_date, category_id, group_id, priority, scheduled_time) VALUES (:t, :d, :c, :g, :p, :s)");
+            $count = 0;
+            foreach ($prev as $row) {
+                $chk = $db->prepare("SELECT COUNT(*) FROM tasks WHERE title = :t AND task_date = :d");
+                $chk->execute([':t' => $row['title'], ':d' => $date]);
+                if ((int) $chk->fetchColumn() === 0) {
+                    $ins->execute([
+                        ':t' => $row['title'], ':d' => $date, ':c' => $row['category_id'],
+                        ':g' => $row['group_id'], ':p' => $row['priority'] ?? 'normal', ':s' => $row['scheduled_time']
+                    ]);
+                    $count++;
+                }
+            }
+
+            echo json_encode(['success' => true, 'copied' => $count]);
+            break;
+
+        case 'edit':
+            $id    = (int) ($input['id'] ?? 0);
+            $title = trim($input['title'] ?? '');
+
+            if ($title === '') {
+                echo json_encode(['success' => false, 'error' => 'Título obrigatório']);
+                exit;
+            }
+
+            $fields = ['title = :t'];
+            $params = [':t' => $title, ':id' => $id];
+
+            if (array_key_exists('category_id', $input)) {
+                $fields[] = 'category_id = :c';
+                $params[':c'] = $input['category_id'] !== null && $input['category_id'] !== '' ? (int) $input['category_id'] : null;
+            }
+            if (array_key_exists('priority', $input)) {
+                $fields[] = 'priority = :p';
+                $params[':p'] = in_array($input['priority'], ['high','normal','low']) ? $input['priority'] : 'normal';
+            }
+            if (array_key_exists('scheduled_time', $input)) {
+                $fields[] = 'scheduled_time = :s';
+                $params[':s'] = !empty($input['scheduled_time']) ? $input['scheduled_time'] : null;
+            }
+            if (array_key_exists('group_id', $input)) {
+                $fields[] = 'group_id = :g';
+                $params[':g'] = $input['group_id'] !== null && $input['group_id'] !== '' ? (int) $input['group_id'] : null;
+            }
+
+            $sql = "UPDATE tasks SET " . implode(', ', $fields) . " WHERE id = :id";
+            $stmt = $db->prepare($sql);
+            $stmt->execute($params);
+            echo json_encode(['success' => true]);
+            break;
+
+        case 'clear_done':
+            $stmt = $db->prepare("DELETE FROM tasks WHERE task_date = :d AND done = 1");
+            $stmt->execute([':d' => $date]);
+            $removed = $stmt->rowCount();
+            echo json_encode(['success' => true, 'removed' => $removed]);
+            break;
+
+        default:
+            echo json_encode(['success' => false, 'error' => 'Ação inválida']);
+    }
+    exit;
+}
+
+http_response_code(405);
+echo json_encode(['error' => 'Método não permitido']);
+
+// ---- Helpers ----
+function prevDate(string $date): string
+{
+    return date('Y-m-d', strtotime("$date -1 day"));
+}
+
+function hasTasks(PDO $db, string $date): bool
+{
+    $stmt = $db->prepare("SELECT COUNT(*) FROM tasks WHERE task_date = :d");
+    $stmt->execute([':d' => $date]);
+    return (int) $stmt->fetchColumn() > 0;
+}
+
+function generateRecurring(PDO $db, string $date): void
+{
+    // Day of week: 0=Sun, 1=Mon ... 6=Sat
+    $dow = (int) date('w', strtotime($date));
+
+    $stmt = $db->query("SELECT * FROM recurring_tasks WHERE active = 1");
+    $recurrings = $stmt->fetchAll();
+
+    $ins = $db->prepare("INSERT INTO tasks (title, task_date, category_id, group_id, priority, scheduled_time, recurring_id) VALUES (:t,:d,:c,:g,:p,:s,:r)");
+
+    foreach ($recurrings as $r) {
+        $days = array_map('intval', explode(',', $r['days_of_week']));
+        if (!in_array($dow, $days)) continue;
+
+        // Check if already generated
+        $chk = $db->prepare("SELECT COUNT(*) FROM tasks WHERE recurring_id = :rid AND task_date = :d");
+        $chk->execute([':rid' => $r['id'], ':d' => $date]);
+        if ((int) $chk->fetchColumn() > 0) continue;
+
+        $ins->execute([
+            ':t' => $r['title'],
+            ':d' => $date,
+            ':c' => $r['category_id'],
+            ':g' => $r['group_id'],
+            ':p' => $r['priority'],
+            ':s' => $r['scheduled_time'],
+            ':r' => $r['id'],
+        ]);
+    }
+}
+
+
+
+================================================================================
+ARQUIVO: checklist\api\workers.php
+================================================================================
+
+<?php
+
+header('Content-Type: application/json');
+
+require_once __DIR__ . '/../config/database.php';
+
+$db = getDB();
+
+// ---- GET: list workers ----
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $stmt = $db->query("SELECT * FROM workers ORDER BY name ASC");
+    $workers = $stmt->fetchAll();
+
+    $workers = array_map(function ($row) {
+        $row['id'] = (int) $row['id'];
+        return $row;
+    }, $workers);
+
+    echo json_encode(['workers' => $workers]);
+    exit;
+}
+
+// ---- POST: add / delete ----
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $input  = json_decode(file_get_contents('php://input'), true);
+    $action = $input['action'] ?? '';
+
+    switch ($action) {
+        case 'add':
+            $name = trim($input['name'] ?? '');
+            if ($name === '') {
+                echo json_encode(['success' => false, 'error' => 'Nome obrigatório']);
+                exit;
+            }
+
+            // Check duplicate
+            $chk = $db->prepare("SELECT COUNT(*) FROM workers WHERE name = :n COLLATE NOCASE");
+            $chk->execute([':n' => $name]);
+            if ((int) $chk->fetchColumn() > 0) {
+                echo json_encode(['success' => false, 'error' => 'Nome já existe']);
+                exit;
+            }
+
+            $stmt = $db->prepare("INSERT INTO workers (name) VALUES (:n)");
+            $stmt->execute([':n' => $name]);
+            echo json_encode(['success' => true, 'id' => (int) $db->lastInsertId()]);
+            break;
+
+        case 'delete':
+            $id = (int) ($input['id'] ?? 0);
+            $stmt = $db->prepare("DELETE FROM workers WHERE id = :id");
+            $stmt->execute([':id' => $id]);
+            echo json_encode(['success' => true]);
+            break;
+
+        default:
+            echo json_encode(['success' => false, 'error' => 'Ação inválida']);
+    }
+    exit;
+}
+
+http_response_code(405);
+echo json_encode(['error' => 'Método não permitido']);
+
+
+
+================================================================================
+ARQUIVO: checklist\assets\css\style.css
+================================================================================
+
+/* ========== RESET & TOKENS ========== */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --white:      #FFFFFF;
+    --bg:         #F0F2F5;
+    --surface:    #FFFFFF;
+    --border:     #E2E8F0;
+    --text:       #1E293B;
+    --text-mid:   #475569;
+    --text-soft:  #94A3B8;
+    --primary:    #2563EB;
+    --primary-lt: #DBEAFE;
+    --green:      #16A34A;
+    --green-lt:   #DCFCE7;
+    --red:        #DC2626;
+    --red-lt:     #FEE2E2;
+    --orange:     #EA580C;
+    --orange-lt:  #FFF7ED;
+    --shadow-sm:  0 1px 3px rgba(0,0,0,.05);
+    --shadow-md:  0 4px 14px rgba(0,0,0,.07);
+    --radius:     14px;
+    --radius-sm:  10px;
+    --transition: .2s ease;
+}
+
+html { font-size: 16px; }
+
+body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.container {
+    width: 100%;
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 0 16px;
+}
+
+/* ========== HEADER ========== */
+.app-header {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.logo {
+    font-size: 1.2rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.logo-icon { font-size: 1.3rem; }
+
+.header-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.header-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    font-size: 1.1rem;
+    color: var(--text-mid);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--transition), color var(--transition);
+}
+
+.header-btn:hover {
+    background: var(--border);
+    color: var(--text);
+}
+
+/* ========== DATE NAVIGATION ========== */
+.date-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 16px 0 8px;
+    padding: 10px 6px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+}
+
+.date-btn {
+    width: 44px;
+    height: 44px;
+    border: none;
+    background: transparent;
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: var(--text-mid);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--transition), color var(--transition);
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.date-btn:hover {
+    background: var(--primary-lt);
+    color: var(--primary);
+}
+
+.date-btn:disabled {
+    opacity: .3;
+    cursor: default;
+}
+
+.date-btn:disabled:hover {
+    background: transparent;
+    color: var(--text-mid);
+}
+
+.date-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.date-label {
+    font-size: .95rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.date-badge {
+    font-size: .75rem;
+    font-weight: 600;
+    color: var(--primary);
+    background: var(--primary-lt);
+    padding: 2px 10px;
+    border-radius: 99px;
+    display: none;
+}
+
+.date-badge.show {
+    display: inline-block;
+}
+
+/* ========== COPY SECTION ========== */
+.copy-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: var(--orange-lt);
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+    animation: slideIn .25s ease;
+}
+
+.copy-bar p {
+    font-size: .85rem;
+    color: var(--orange);
+    font-weight: 500;
+}
+
+.btn-copy {
+    padding: 8px 16px;
+    background: var(--orange);
+    color: var(--white);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: .85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--transition), transform var(--transition);
+    white-space: nowrap;
+}
+
+.btn-copy:hover { background: #C2410C; }
+.btn-copy:active { transform: scale(.96); }
+
+/* ========== PROGRESS BAR ========== */
+.progress-section {
+    margin: 20px 0 8px;
+    padding: 16px 20px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+}
+
+.progress-label {
+    font-size: .85rem;
+    font-weight: 600;
+    color: var(--text-mid);
+}
+
+.progress-count {
+    font-size: .85rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.progress-track {
+    width: 100%;
+    height: 8px;
+    background: var(--bg);
+    border-radius: 99px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--green);
+    border-radius: 99px;
+    transition: width .4s ease;
+}
+
+.progress-fill.complete {
+    background: var(--green);
+}
+
+/* ========== ADD FORM ========== */
+.add-form {
+    margin: 16px 0;
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    padding: 12px;
+}
+
+.add-row {
+    display: flex;
+    gap: 8px;
+}
+
+.add-form input[type="text"] {
+    flex: 1;
+    padding: 12px 14px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: .95rem;
+    background: var(--white);
+    color: var(--text);
+    transition: border-color var(--transition);
+    outline: none;
+}
+
+.add-form input[type="text"]:focus {
+    border-color: var(--primary);
+}
+
+.add-form input[type="text"]::placeholder {
+    color: var(--text-soft);
+}
+
+.btn-toggle-opts {
+    width: 44px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    color: var(--text-mid);
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-toggle-opts:hover {
+    border-color: var(--text-soft);
+    color: var(--text);
+}
+
+.btn-toggle-opts.open {
+    background: var(--primary-lt);
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: rotate(180deg);
+}
+
+.add-opts {
+    display: none;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+}
+
+.add-opts.show {
+    display: flex;
+}
+
+.add-opts .form-field {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 100px;
+}
+
+.form-field {
+    flex: 1;
+    padding: 11px 12px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: .88rem;
+    background: var(--white);
+    color: var(--text);
+    outline: none;
+    cursor: pointer;
+    transition: border-color var(--transition);
+    min-width: 0;
+}
+
+select.form-field {
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2394A3B8' stroke-width='2' fill='none'/%3E%3C/svg%3E") no-repeat right 10px center;
+    padding-right: 30px;
+}
+
+.form-field:focus {
+    border-color: var(--primary);
+}
+
+/* ---- Time Trigger Button ---- */
+.time-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: var(--white);
+    flex: 1 1 calc(50% - 4px);
+    min-width: 90px;
+}
+
+.time-trigger-text {
+    font-size: .85rem;
+    color: var(--text-soft);
+}
+
+.time-trigger.has-value .time-trigger-text {
+    color: var(--text);
+    font-weight: 700;
+    font-size: .95rem;
+    letter-spacing: 1px;
+}
+
+/* ---- Scroll Time Picker ---- */
+.tp-body {
+    padding: 16px 20px 20px;
+}
+
+.tp-display {
+    text-align: center;
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--primary);
+    letter-spacing: 4px;
+    padding: 8px 0 16px;
+    font-variant-numeric: tabular-nums;
+}
+
+.tp-columns {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.tp-col {
+    flex: 1;
+    max-width: 120px;
+}
+
+.tp-col-label {
+    text-align: center;
+    font-size: .75rem;
+    font-weight: 600;
+    color: var(--text-soft);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 6px;
+}
+
+.tp-sep {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text-soft);
+    padding-top: 20px;
+}
+
+.tp-scroll {
+    height: 180px;
+    overflow-y: auto;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    scroll-snap-type: y mandatory;
+    -webkit-overflow-scrolling: touch;
+}
+
+.tp-scroll::-webkit-scrollbar {
+    width: 0;
+    display: none;
+}
+
+.tp-item {
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--text-soft);
+    scroll-snap-align: center;
+    cursor: pointer;
+    transition: all .15s ease;
+    border-radius: 6px;
+    margin: 2px 4px;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.tp-item:hover {
+    background: var(--white);
+}
+
+.tp-item.selected {
+    background: var(--primary);
+    color: var(--white);
+    font-weight: 700;
+    font-size: 1.25rem;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, .25);
+}
+
+.tp-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 13px 22px;
+    border: none;
+    border-radius: var(--radius);
+    font-family: inherit;
+    font-size: .95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--transition), transform var(--transition);
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.btn:active { transform: scale(.96); }
+
+.btn-primary {
+    background: var(--primary);
+    color: var(--white);
+}
+
+.btn-primary:hover { background: #1D4ED8; }
+
+.btn-icon {
+    width: 48px;
+    padding: 0;
+    font-size: 1.4rem;
+    border-radius: var(--radius);
+}
+
+/* ========== TASK LIST ========== */
+.task-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-bottom: 32px;
+}
+
+.task-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    transition: opacity var(--transition);
+    animation: slideIn .25s ease;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.task-card.done {
+    opacity: .5;
+}
+
+.task-card.done .task-name {
+    text-decoration: line-through;
+    color: var(--text-soft);
+}
+
+/* Custom Checkbox */
+.task-check {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+}
+
+.task-check input {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    z-index: 2;
+    margin: 0;
+}
+
+.task-check .mark {
+    width: 28px;
+    height: 28px;
+    border: 2.5px solid var(--border);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition);
+    background: var(--white);
+}
+
+.task-check input:checked + .mark {
+    background: var(--green);
+    border-color: var(--green);
+}
+
+.task-check .mark::after {
+    content: '✓';
+    font-size: .85rem;
+    font-weight: 700;
+    color: var(--white);
+    opacity: 0;
+    transition: opacity var(--transition);
+}
+
+.task-check input:checked + .mark::after {
+    opacity: 1;
+}
+
+.task-title {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.task-name {
+    font-weight: 600;
+    font-size: .95rem;
+    word-break: break-word;
+}
+
+.task-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.cat-badge {
+    display: inline-block;
+    font-size: .7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 99px;
+    width: fit-content;
+}
+
+.pri-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: .7rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 99px;
+    width: fit-content;
+}
+
+.pri-badge.high {
+    background: #FEE2E2;
+    color: #DC2626;
+}
+
+.pri-badge.low {
+    background: #DBEAFE;
+    color: #2563EB;
+}
+
+.time-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: .7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 99px;
+    background: var(--bg);
+    color: var(--text-mid);
+}
+
+/* Priority left stripe on card */
+.task-card.pri-high {
+    border-left: 4px solid #DC2626;
+}
+
+.task-card.pri-low {
+    border-left: 4px solid #2563EB;
+}
+
+/* ---- Edit Row ---- */
+.edit-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+}
+
+.edit-row .form-field {
+    flex: 1 1 calc(50% - 3px);
+    min-width: 80px;
+}
+
+/* ---- Category Select (legacy compat) ---- */
+.cat-select {
+    padding: 10px 8px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: .85rem;
+    background: var(--surface);
+    color: var(--text);
+    outline: none;
+    cursor: pointer;
+    transition: border-color var(--transition);
+    max-width: 120px;
+}
+
+.cat-select:focus {
+    border-color: var(--primary);
+}
+
+.edit-cat-select {
+    margin-top: 0;
+    max-width: 100%;
+}
+
+/* ---- Filter Bar ---- */
+.filter-bar {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 4px 0 12px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.filter-bar::-webkit-scrollbar { display: none; }
+
+.filter-chip {
+    padding: 7px 14px;
+    border: 2px solid var(--border);
+    border-radius: 99px;
+    background: var(--surface);
+    font-family: inherit;
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--text-mid);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all var(--transition);
+    flex-shrink: 0;
+}
+
+.filter-chip:hover {
+    border-color: var(--text-soft);
+}
+
+.filter-chip.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--white);
+}
+
+.filter-chip[style*="--chip-color"].active {
+    background: var(--chip-color);
+    border-color: var(--chip-color);
+    color: var(--white);
+}
+
+/* ---- Task Actions ---- */
+.task-actions {
+    display: flex;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.task-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: var(--text-soft);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: .9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color var(--transition), background var(--transition);
+}
+
+.task-btn.edit:hover {
+    background: var(--primary-lt);
+    color: var(--primary);
+}
+
+.task-btn.delete:hover {
+    background: var(--red-lt);
+    color: var(--red);
+}
+
+.task-btn.save {
+    color: var(--green);
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+.task-btn.save:hover {
+    background: var(--green-lt);
+}
+
+.task-btn.cancel:hover {
+    background: var(--red-lt);
+    color: var(--red);
+}
+
+/* ---- Inline Edit ---- */
+.edit-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 2px solid var(--primary);
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: .95rem;
+    font-weight: 600;
+    color: var(--text);
+    background: var(--white);
+    outline: none;
+}
+
+.task-card.editing {
+    background: var(--primary-lt);
+    box-shadow: 0 0 0 2px var(--primary);
+    flex-wrap: wrap;
+}
+
+.task-card.editing .task-check {
+    display: none;
+}
+
+.task-card.editing .task-title {
+    flex: 1 1 100%;
+}
+
+.task-card.editing .task-actions {
+    flex: 1 1 100%;
+    justify-content: flex-end;
+    padding-top: 4px;
+}
+
+/* ========== CONFIRM MODAL ========== */
+.confirm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    opacity: 0;
+    transition: opacity .2s ease;
+    padding: 16px;
+}
+
+.confirm-overlay.show {
+    opacity: 1;
+}
+
+.confirm-box {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 24px;
+    max-width: 320px;
+    width: 100%;
+    box-shadow: var(--shadow-md);
+    transform: scale(.92);
+    transition: transform .2s ease;
+}
+
+.confirm-overlay.show .confirm-box {
+    transform: scale(1);
+}
+
+.confirm-msg {
+    font-size: 1rem;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 20px;
+    color: var(--text);
+}
+
+.confirm-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.confirm-btn {
+    flex: 1;
+    padding: 12px 0;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: .9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--transition);
+}
+
+.confirm-btn.cancel {
+    background: var(--bg);
+    color: var(--text-mid);
+}
+
+.confirm-btn.cancel:hover {
+    background: var(--border);
+}
+
+.confirm-btn.danger {
+    background: var(--red);
+    color: var(--white);
+}
+
+.confirm-btn.danger:hover {
+    background: #B91C1C;
+}
+
+/* ========== EMPTY STATE ========== */
+.empty-state {
+    text-align: center;
+    padding: 52px 16px;
+    color: var(--text-soft);
+}
+
+.empty-icon {
+    font-size: 3rem;
+    margin-bottom: 12px;
+}
+
+.empty-state p {
+    font-size: .95rem;
+    line-height: 1.5;
+}
+
+/* ========== TOAST ========== */
+.toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--text);
+    color: var(--white);
+    padding: 12px 24px;
+    border-radius: var(--radius);
+    font-size: .9rem;
+    font-weight: 500;
+    opacity: 0;
+    transition: all .3s ease;
+    z-index: 999;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* ========== ALL DONE BANNER ========== */
+.all-done {
+    text-align: center;
+    padding: 20px;
+    background: var(--green-lt);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    animation: slideIn .3s ease;
+}
+
+.all-done .done-icon { font-size: 2rem; }
+
+.all-done p {
+    font-weight: 600;
+    color: var(--green);
+    margin-top: 4px;
+    font-size: .95rem;
+}
+
+/* ========== CLEAR COMPLETED ========== */
+.clear-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px;
+    margin-top: 4px;
+}
+
+.btn-clear {
+    padding: 10px 20px;
+    background: var(--bg);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    font-family: inherit;
+    font-size: .85rem;
+    font-weight: 600;
+    color: var(--text-mid);
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.btn-clear:hover {
+    background: var(--red-lt);
+    border-color: var(--red);
+    color: var(--red);
+}
+
+.btn-clear:active { transform: scale(.96); }
+
+/* ========== MODAL ========== */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.4);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 500;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s ease;
+    padding: 16px;
+}
+
+.modal-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal {
+    background: var(--white);
+    border-radius: var(--radius) var(--radius) 0 0;
+    width: 100%;
+    max-width: 500px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    transform: translateY(100%);
+    transition: transform .3s ease;
+}
+
+.modal-overlay.open .modal {
+    transform: translateY(0);
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 20px 12px;
+    border-bottom: 1px solid var(--border);
+}
+
+.modal-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.modal-close {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    font-size: 1.1rem;
+    color: var(--text-mid);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--transition);
+}
+
+.modal-close:hover {
+    background: var(--border);
+}
+
+.modal-body {
+    padding: 16px 20px 24px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* ---- Category Form ---- */
+.cat-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.cat-form input[type="text"] {
+    flex: 1;
+    padding: 10px 14px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: .9rem;
+    outline: none;
+    color: var(--text);
+    transition: border-color var(--transition);
+}
+
+.cat-form input[type="text"]:focus {
+    border-color: var(--primary);
+}
+
+.color-picker {
+    width: 40px;
+    height: 40px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 2px;
+    cursor: pointer;
+    background: var(--white);
+}
+
+.btn-sm {
+    padding: 10px 16px;
+    font-size: .85rem;
+    white-space: nowrap;
+}
+
+/* ---- Category List ---- */
+.cat-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.cat-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    animation: slideIn .2s ease;
+}
+
+.cat-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.cat-item-name {
+    flex: 1;
+    font-weight: 600;
+    font-size: .9rem;
+    min-width: 0;
+    word-break: break-word;
+}
+
+.cat-item-count {
+    font-size: .75rem;
+    color: var(--text-soft);
+    font-weight: 500;
+}
+
+.cat-item-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.cat-item-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: var(--text-soft);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: .95rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color var(--transition), background var(--transition);
+}
+
+.cat-item-btn.edit:hover {
+    background: var(--primary-lt);
+    color: var(--primary);
+}
+
+.cat-item-btn.del:hover {
+    background: var(--red-lt);
+    color: var(--red);
+}
+
+/* Edit mode in cat list */
+.cat-item.editing {
+    background: var(--primary-lt);
+}
+
+.cat-item .edit-name {
+    flex: 1;
+    padding: 6px 10px;
+    border: 2px solid var(--primary);
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: .9rem;
+    font-weight: 600;
+    outline: none;
+    color: var(--text);
+}
+
+/* ========== MODAL SMALL ========== */
+.modal-sm {
+    max-width: 360px;
+}
+
+/* ========== WORKER PICKER ========== */
+.picker-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.picker-btn {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--white);
+    font-family: inherit;
+    font-size: .95rem;
+    font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+    text-align: left;
+    transition: all var(--transition);
+}
+
+.picker-btn:hover {
+    border-color: var(--primary);
+    background: var(--primary-lt);
+}
+
+.picker-btn:active {
+    transform: scale(.98);
+}
+
+.picker-btn.anon {
+    color: var(--text-soft);
+    font-weight: 500;
+    border-style: dashed;
+}
+
+/* ========== DONE INFO on card ========== */
+.done-info {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: .7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 99px;
+    background: var(--green-lt);
+    color: var(--green);
+}
+
+/* ========== LOG LIST ========== */
+.log-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.log-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+}
+
+.log-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 4px;
+}
+
+.log-dot.done   { background: var(--green); }
+.log-dot.undone { background: var(--orange); }
+
+.log-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.log-action {
+    font-size: .85rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.log-action span {
+    font-weight: 700;
+}
+
+.log-time {
+    font-size: .75rem;
+    color: var(--text-soft);
+    margin-top: 2px;
+}
+
+.log-empty {
+    text-align: center;
+    padding: 24px;
+    color: var(--text-soft);
+    font-size: .9rem;
+}
+
+/* ========== TASK LOG BUTTON ========== */
+.task-btn.log {
+    font-size: .85rem;
+}
+
+.task-btn.log:hover {
+    background: var(--green-lt);
+    color: var(--green);
+}
+
+/* ========== GROUP HEADERS ========== */
+.group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 4px 4px;
+    margin-top: 8px;
+}
+
+.group-header:first-child {
+    margin-top: 0;
+}
+
+.group-label {
+    font-size: .8rem;
+    font-weight: 700;
+    color: var(--text-mid);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+
+.group-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+}
+
+.group-count {
+    font-size: .75rem;
+    color: var(--text-soft);
+    font-weight: 500;
+}
+
+/* ========== MODAL LARGE ========== */
+.modal-lg {
+    max-width: 560px;
+}
+
+/* ========== RECURRING FORM ========== */
+.rec-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.rec-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.rec-row .form-field {
+    flex: 1 1 calc(50% - 3px);
+    min-width: 80px;
+}
+
+.rec-days {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+}
+
+.day-check {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    flex: 1;
+}
+
+.day-check input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.day-check span {
+    width: 100%;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: .75rem;
+    font-weight: 600;
+    color: var(--text-soft);
+    transition: all var(--transition);
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.day-check input:checked + span {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--white);
+}
+
+.btn-full {
+    width: 100%;
+}
+
+/* ========== RECURRING LIST ========== */
+.rec-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.rec-item {
+    padding: 14px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    animation: slideIn .2s ease;
+}
+
+.rec-item.inactive {
+    opacity: .45;
+}
+
+.rec-item-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.rec-item-title {
+    flex: 1;
+    font-weight: 600;
+    font-size: .9rem;
+    min-width: 0;
+    word-break: break-word;
+}
+
+.rec-item-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.rec-item-meta {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.rec-days-display {
+    display: flex;
+    gap: 3px;
+}
+
+.rec-day-dot {
+    width: 26px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    font-size: .65rem;
+    font-weight: 700;
+}
+
+.rec-day-dot.on {
+    background: var(--primary-lt);
+    color: var(--primary);
+}
+
+.rec-day-dot.off {
+    background: transparent;
+    color: var(--text-soft);
+}
+
+/* ========== RESPONSIVE ========== */
+@media (min-width: 768px) {
+    .container { padding: 0 24px; }
+    .app-header { padding: 18px 0; }
+    .logo { font-size: 1.35rem; }
+
+    .header-btn { width: 40px; height: 40px; font-size: 1.2rem; }
+    .header-actions { gap: 6px; }
+
+    .add-opts .form-field { flex: 1 1 auto; min-width: 0; }
+    .edit-row .form-field { flex: 1 1 auto; }
+    .rec-row .form-field { flex: 1 1 auto; }
+
+    .task-btn { width: 34px; height: 34px; font-size: 1rem; }
+    .task-actions { gap: 4px; }
+
+    .modal {
+        border-radius: var(--radius);
+        max-height: 70vh;
+    }
+
+    .modal-overlay {
+        align-items: center;
+    }
+
+    .modal-overlay.open .modal {
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 380px) {
+    .add-opts .form-field { flex: 1 1 100%; }
+    .edit-row .form-field { flex: 1 1 100%; }
+    .rec-row .form-field { flex: 1 1 100%; }
+    .day-check span { font-size: .68rem; height: 34px; }
+    .header-btn { width: 32px; height: 32px; font-size: 1rem; }
+}
+
+
+================================================================================
+ARQUIVO: checklist\assets\js\app.js
+================================================================================
+
+const API_T = 'api/tasks.php', API_C = 'api/categories.php', API_W = 'api/workers.php', API_G = 'api/groups.php', API_R = 'api/recurring.php';
+
+let currentDate = todayStr(), categories = [], workers = [], groups = [], activeFilter = null, editingCatId = null, editingGroupId = null, optsOpen = false, pendingToggleId = null;
+let activeTimeTarget = null; // element that opened the time picker
+let tpSelH = 7, tpSelM = 0;
+
+const $ = id => document.getElementById(id);
+
+// ================================================================
+//  INIT
+// ================================================================
+document.addEventListener('DOMContentLoaded', async () => {
+    updateDateUI();
+    await Promise.all([loadCategories(), loadWorkers(), loadGroups()]);
+    loadTasks();
+    buildTimePicker();
+
+    $('add-form').addEventListener('submit', addTask);
+    $('btn-prev').addEventListener('click', () => changeDate(-1));
+    $('btn-next').addEventListener('click', () => changeDate(+1));
+    $('btn-opts').addEventListener('click', toggleOpts);
+    $('btn-settings').addEventListener('click', openCatsModal);
+    $('btn-workers').addEventListener('click', openWorkersModal);
+    $('btn-groups').addEventListener('click', openGroupsModal);
+    $('btn-recurring').addEventListener('click', openRecurringModal);
+    $('cat-form').addEventListener('submit', handleCatSubmit);
+    $('worker-form').addEventListener('submit', handleWorkerSubmit);
+    $('group-form').addEventListener('submit', handleGroupSubmit);
+    $('rec-form').addEventListener('submit', handleRecSubmit);
+
+    ['modal-cats','modal-workers','modal-picker','modal-log','modal-groups','modal-recurring','modal-time-picker'].forEach(id => {
+        $(id).addEventListener('click', e => { if(e.target === $(id)) $(id).classList.remove('open'); });
+    });
+});
+
+function toggleOpts() { optsOpen = !optsOpen; $('add-opts').classList.toggle('show', optsOpen); $('btn-opts').classList.toggle('open', optsOpen); }
+
+// ================================================================
+//  SCROLL TIME PICKER
+// ================================================================
+function buildTimePicker() {
+    const hEl = $('tp-hours'), mEl = $('tp-minutes');
+    let hHtml = '', mHtml = '';
+    for (let i = 0; i < 24; i++) hHtml += `<div class="tp-item" data-val="${i}" onclick="selectHour(${i})">${String(i).padStart(2,'0')}</div>`;
+    for (let i = 0; i < 60; i += 5) mHtml += `<div class="tp-item" data-val="${i}" onclick="selectMinute(${i})">${String(i).padStart(2,'0')}</div>`;
+    hEl.innerHTML = hHtml;
+    mEl.innerHTML = mHtml;
+}
+
+function openTimePicker(trigger) {
+    activeTimeTarget = trigger;
+    const cur = trigger.dataset.value || '';
+    if (cur) {
+        const [h, m] = cur.split(':').map(Number);
+        tpSelH = h; tpSelM = Math.round(m / 5) * 5;
+    } else {
+        tpSelH = 7; tpSelM = 0;
+    }
+    updatePickerUI();
+    $('modal-time-picker').classList.add('open');
+    // Scroll to selected after modal opens
+    setTimeout(() => {
+        scrollToSelected($('tp-hours'), tpSelH);
+        scrollToSelected($('tp-minutes'), tpSelM / 5);
+    }, 100);
+}
+
+function selectHour(h) { tpSelH = h; updatePickerUI(); }
+function selectMinute(m) { tpSelM = m; updatePickerUI(); }
+
+function updatePickerUI() {
+    $('tp-display').textContent = `${String(tpSelH).padStart(2,'0')}:${String(tpSelM).padStart(2,'0')}`;
+
+    $('tp-hours').querySelectorAll('.tp-item').forEach(el => {
+        el.classList.toggle('selected', parseInt(el.dataset.val) === tpSelH);
+    });
+    $('tp-minutes').querySelectorAll('.tp-item').forEach(el => {
+        el.classList.toggle('selected', parseInt(el.dataset.val) === tpSelM);
+    });
+}
+
+function scrollToSelected(container, index) {
+    const item = container.children[index];
+    if (item) {
+        item.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+}
+
+function confirmTimePicker() {
+    if (!activeTimeTarget) return;
+    const val = `${String(tpSelH).padStart(2,'0')}:${String(tpSelM).padStart(2,'0')}`;
+    activeTimeTarget.dataset.value = val;
+    activeTimeTarget.querySelector('.time-trigger-text').textContent = `🕐 ${val}`;
+    activeTimeTarget.classList.add('has-value');
+    closeTimePicker();
+}
+
+function clearTimePicker() {
+    if (!activeTimeTarget) return;
+    activeTimeTarget.dataset.value = '';
+    activeTimeTarget.querySelector('.time-trigger-text').textContent = '🕐 Horário';
+    activeTimeTarget.classList.remove('has-value');
+    closeTimePicker();
+}
+
+function closeTimePicker() {
+    $('modal-time-picker').classList.remove('open');
+    activeTimeTarget = null;
+}
+
+function getTimeVal(el) {
+    return el.dataset.value || null;
+}
+
+function setTimeBtn(el, val) {
+    if (val) {
+        el.dataset.value = val;
+        el.querySelector('.time-trigger-text').textContent = `🕐 ${val}`;
+        el.classList.add('has-value');
+    } else {
+        el.dataset.value = '';
+        el.querySelector('.time-trigger-text').textContent = '🕐 Horário';
+        el.classList.remove('has-value');
+    }
+}
+
+// ================================================================
+//  DATE NAV
+// ================================================================
+function changeDate(off) {
+    const d = new Date(currentDate+'T12:00:00'); d.setDate(d.getDate()+off);
+    currentDate = toStr(d); activeFilter = null; updateDateUI(); loadTasks();
+}
+function updateDateUI() {
+    const t = todayStr(); $('date-label').textContent = formatDateBR(currentDate);
+    const badge = $('date-badge');
+    if(currentDate===t){badge.textContent='Hoje';badge.classList.add('show');}
+    else if(currentDate===offsetDate(t,-1)){badge.textContent='Ontem';badge.classList.add('show');}
+    else if(currentDate===offsetDate(t,1)){badge.textContent='Amanhã';badge.classList.add('show');}
+    else{badge.classList.remove('show');}
+    $('btn-next').disabled = daysDiff(t,currentDate)>=7;
+}
+
+// ================================================================
+//  DATA LOADERS
+// ================================================================
+async function loadCategories() { categories = (await(await fetch(API_C)).json()).categories; populateSelect($('input-category'), categories, 'name', ''); }
+async function loadWorkers() { workers = (await(await fetch(API_W)).json()).workers; }
+async function loadGroups() { groups = (await(await fetch(API_G)).json()).groups; populateGroupSelect($('input-group'), ''); }
+
+function populateSelect(sel, items, labelKey, val) {
+    sel.innerHTML = `<option value="">${sel.title||'Nenhum'}</option>` + items.map(i => `<option value="${i.id}" ${String(i.id)===String(val)?'selected':''}>${i[labelKey]}</option>`).join('');
+}
+function populateGroupSelect(sel, val) {
+    sel.innerHTML = `<option value="">${sel.title||'Grupo'}</option>` + groups.map(g => `<option value="${g.id}" ${String(g.id)===String(val)?'selected':''}>${g.name}</option>`).join('');
+}
+function getCat(id) { return categories.find(c=>c.id===id)||null; }
+function getGroup(id) { return groups.find(g=>g.id===id)||null; }
+
+// ================================================================
+//  TASKS
+// ================================================================
+async function loadTasks() {
+    const data = await(await fetch(`${API_T}?date=${currentDate}`)).json();
+    renderProgress(data.done, data.total);
+    renderCopyBar(data.total, data.has_prev);
+    renderFilterBar(data.tasks);
+    renderList(data.tasks, data.done, data.total);
+    renderClearBar(data.done);
+}
+
+async function addTask(e) {
+    e.preventDefault();
+    const title = $('input-title').value.trim(); if(!title) return;
+    await fetch(`${API_T}?date=${currentDate}`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+        action:'add', title, category_id:$('input-category').value||null, group_id:$('input-group').value||null,
+        priority:$('input-priority').value||'normal', scheduled_time:getTimeVal($('input-time'))
+    })});
+    $('input-title').value=''; $('input-priority').value='normal';
+    setTimeBtn($('input-time'), null);
+    loadTasks(); toast('Tarefa adicionada!');
+}
+
+function toggleTask(id, done) {
+    if(done||workers.length===0) doToggle(id,''); else { pendingToggleId=id; showPickerModal(); }
+}
+async function doToggle(id, w) { await fetch(API_T,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'toggle',id,worker:w})}); loadTasks(); }
+
+async function deleteTask(id) { showConfirm('Remover esta tarefa?', async()=>{
+    await fetch(API_T,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',id})}); loadTasks(); toast('Tarefa removida');
+});}
+
+async function copyYesterday() {
+    const data = await(await fetch(`${API_T}?date=${currentDate}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'copy',from_date:offsetDate(currentDate,-1)})})).json();
+    loadTasks(); toast(data.copied>0?`${data.copied} copiada${data.copied>1?'s':''}!`:'Todas já existem');
+}
+
+async function clearDone() { showConfirm('Remover concluídas?', async()=>{
+    const data = await(await fetch(`${API_T}?date=${currentDate}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'clear_done'})})).json();
+    loadTasks(); toast(`${data.removed} removida${data.removed>1?'s':''}`);
+});}
+
+// ---- Edit ----
+function startEdit(id, t) {
+    const card = document.querySelector(`[data-id="${id}"]`); if(!card) return;
+    card.classList.add('editing');
+    const te = card.querySelector('.task-title'), ae = card.querySelector('.task-actions');
+    const timeDisplay = t.scheduled_time ? `🕐 ${t.scheduled_time}` : '🕐 Horário';
+    const timeClass = t.scheduled_time ? 'has-value' : '';
+
+    te.innerHTML = `<input type="text" class="edit-input" value="${esc(t.title)}" maxlength="150">
+        <div class="edit-row">
+            <select class="edit-cat form-field" title="Setor"></select>
+            <select class="edit-grp form-field" title="Grupo"></select>
+        </div>
+        <div class="edit-row">
+            <select class="edit-pri form-field">
+                <option value="normal" ${t.priority==='normal'?'selected':''}>Prioridade</option>
+                <option value="high" ${t.priority==='high'?'selected':''}>🔴 Alta</option>
+                <option value="low" ${t.priority==='low'?'selected':''}>🔵 Baixa</option>
+            </select>
+            <button type="button" class="form-field time-trigger edit-time ${timeClass}" data-value="${t.scheduled_time||''}" onclick="openTimePicker(this)">
+                <span class="time-trigger-text">${timeDisplay}</span>
+            </button>
+        </div>`;
+    ae.innerHTML = `<button class="task-btn save" onclick="saveEdit(${id})">✓</button><button class="task-btn cancel" onclick="loadTasks()">✕</button>`;
+    populateSelect(card.querySelector('.edit-cat'), categories, 'name', t.category_id||'');
+    populateGroupSelect(card.querySelector('.edit-grp'), t.group_id||'');
+    const inp = te.querySelector('.edit-input');
+    inp.addEventListener('keydown', e=>{if(e.key==='Enter')saveEdit(id);if(e.key==='Escape')loadTasks();});
+}
+
+async function saveEdit(id) {
+    const c = document.querySelector(`[data-id="${id}"]`); if(!c) return;
+    const title = c.querySelector('.edit-input').value.trim(); if(!title) return;
+    await fetch(API_T,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+        action:'edit', id, title, category_id:c.querySelector('.edit-cat').value||null,
+        group_id:c.querySelector('.edit-grp').value||null, priority:c.querySelector('.edit-pri').value||'normal',
+        scheduled_time:getTimeVal(c.querySelector('.edit-time'))
+    })}); loadTasks(); toast('Atualizada!');
+}
+
+async function viewLogs(id, title) {
+    $('modal-log').querySelector('.modal-title').textContent = `Histórico: ${title}`;
+    const data = await(await fetch(API_T,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'logs',id})})).json();
+    $('log-list').innerHTML = (!data.logs||!data.logs.length) ? '<p class="log-empty">Nenhum registro.</p>' :
+        data.logs.map(l=>`<li class="log-item"><span class="log-dot ${l.action}"></span><div class="log-content">
+            <div class="log-action">${l.action==='done'?'Concluída':'Reaberta'} ${l.worker?`por <span>${esc(l.worker)}</span>`:'<span>sem identificação</span>'}</div>
+            <div class="log-time">${formatDateTime(l.created_at)}</div></div></li>`).join('');
+    $('modal-log').classList.add('open');
+}
+function closeLogModal(){$('modal-log').classList.remove('open');}
+
+// ================================================================
+//  RENDER
+// ================================================================
+function renderProgress(done, total) {
+    if(!total){$('progress').innerHTML='';return;}
+    const p=Math.round(done/total*100);
+    $('progress').innerHTML=`<div class="progress-section"><div class="progress-header"><span class="progress-label">Progresso do dia</span><span class="progress-count">${done} de ${total} — ${p}%</span></div><div class="progress-track"><div class="progress-fill ${p===100?'complete':''}" style="width:${p}%"></div></div></div>`;
+}
+function renderCopyBar(t,h){$('copy-section').innerHTML=(t===0&&h)?`<div class="copy-bar"><p>📋 Dia anterior tem tarefas</p><button class="btn-copy" onclick="copyYesterday()">Copiar</button></div>`:'';}
+function renderClearBar(d){$('clear-section').innerHTML=d>0?`<div class="clear-bar"><button class="btn-clear" onclick="clearDone()">🗑 Limpar ${d} concluída${d>1?'s':''}</button></div>`:'';}
+
+function renderFilterBar(tasks) {
+    if(!tasks.length){$('filter-bar').innerHTML='';return;}
+    const m=new Map();
+    tasks.forEach(t=>{if(t.category_id&&t.cat_name)m.set(t.category_id,{name:t.cat_name,color:t.cat_color});});
+    if(!m.size){$('filter-bar').innerHTML='';return;}
+    let h=`<button class="filter-chip ${activeFilter===null?'active':''}" onclick="setFilter(null)">Todos</button>`;
+    m.forEach((c,id)=>{h+=`<button class="filter-chip ${activeFilter===id?'active':''}" style="--chip-color:${c.color}" onclick="setFilter(${id})">${c.name}</button>`;});
+    $('filter-bar').innerHTML=h;
+}
+function setFilter(c){activeFilter=c;loadTasks();}
+
+function renderList(tasks, done, total) {
+    const filtered = activeFilter!==null ? tasks.filter(t=>t.category_id===activeFilter) : tasks;
+    const el = $('task-list');
+    if(!tasks.length){el.innerHTML=`<div class="empty-state"><div class="empty-icon">📋</div><p>Nenhuma tarefa neste dia.<br>Adicione acima ou copie do dia anterior!</p></div>`;return;}
+    if(!filtered.length){el.innerHTML=`<div class="empty-state"><div class="empty-icon">🔍</div><p>Nenhuma tarefa neste setor.</p></div>`;return;}
+
+    let html = '';
+    if(done===total&&total>0&&activeFilter===null) html+=`<div class="all-done"><div class="done-icon">🎉</div><p>Todas concluídas!</p></div>`;
+
+    const grouped = new Map();
+    filtered.forEach(t => { const k=t.group_id||0; if(!grouped.has(k))grouped.set(k,[]); grouped.get(k).push(t); });
+    const sortedKeys = [...grouped.keys()].sort((a,b) => {
+        if(a===0)return 1;if(b===0)return -1;
+        return (getGroup(a)?.sort_order||99)-(getGroup(b)?.sort_order||99);
+    });
+
+    sortedKeys.forEach(key => {
+        const items = grouped.get(key);
+        if(key!==0){const g=getGroup(key);const gd=items.filter(t=>t.done).length;
+            html+=`<div class="group-header"><span class="group-label">📁 ${g?esc(g.name):'Grupo'}</span><span class="group-line"></span><span class="group-count">${gd}/${items.length}</span></div>`;}
+        html += items.map(t=>renderTaskCard(t)).join('');
+    });
+    el.innerHTML = html;
+}
+
+function renderTaskCard(t) {
+    const cat=getCat(t.category_id),priClass=t.priority!=='normal'?`pri-${t.priority}`:'';
+    let meta='';
+    if(cat)meta+=`<span class="cat-badge" style="background:${cat.color}20;color:${cat.color}">${cat.name}</span>`;
+    if(t.priority==='high')meta+=`<span class="pri-badge high">Alta</span>`;
+    if(t.priority==='low')meta+=`<span class="pri-badge low">Baixa</span>`;
+    if(t.scheduled_time)meta+=`<span class="time-badge">🕐 ${formatTime(t.scheduled_time)}</span>`;
+    if(t.done&&t.done_by)meta+=`<span class="done-info">✓ ${esc(t.done_by)} · ${formatTimeFromDT(t.done_at)}</span>`;
+    else if(t.done&&t.done_at)meta+=`<span class="done-info">✓ ${formatTimeFromDT(t.done_at)}</span>`;
+
+    const td=encodeURIComponent(JSON.stringify({title:t.title,category_id:t.category_id,group_id:t.group_id,priority:t.priority,scheduled_time:t.scheduled_time}));
+
+    return `<li class="task-card ${t.done?'done':''} ${priClass}" data-id="${t.id}">
+        <label class="task-check" onclick="event.preventDefault();toggleTask(${t.id},${t.done})">
+            <input type="checkbox" ${t.done?'checked':''} tabindex="-1"><span class="mark"></span></label>
+        <div class="task-title"><span class="task-name">${esc(t.title)}</span>${meta?`<div class="task-meta">${meta}</div>`:''}</div>
+        <div class="task-actions">
+            <button class="task-btn log" onclick="viewLogs(${t.id},'${esc(t.title).replace(/'/g,"\\'")}')" title="Histórico">📋</button>
+            <button class="task-btn edit" onclick="startEdit(${t.id},JSON.parse(decodeURIComponent('${td}')))" title="Editar">✎</button>
+            <button class="task-btn delete" onclick="deleteTask(${t.id})" title="Remover">✕</button>
+        </div></li>`;
+}
+
+// ================================================================
+//  PICKER MODAL (workers)
+// ================================================================
+function showPickerModal() {
+    $('picker-list').innerHTML = workers.map(w=>`<button class="picker-btn" onclick="pickWorker('${esc(w.name).replace(/'/g,"\\'")}')">${esc(w.name)}</button>`).join('')
+        + `<button class="picker-btn anon" onclick="pickWorker('')">Sem identificação</button>`;
+    $('modal-picker').classList.add('open');
+}
+function closePickerModal(){$('modal-picker').classList.remove('open');pendingToggleId=null;}
+function pickWorker(n){closePickerModal();if(pendingToggleId!==null){doToggle(pendingToggleId,n);pendingToggleId=null;}}
+
+// ================================================================
+//  CATEGORIES MODAL
+// ================================================================
+function openCatsModal(){editingCatId=null;$('cat-form-btn').textContent='Adicionar';$('cat-name').value='';$('cat-color').value='#3B82F6';$('modal-cats').classList.add('open');renderCatList();}
+function closeModal(){$('modal-cats').classList.remove('open');editingCatId=null;loadCategories().then(()=>loadTasks());}
+
+async function handleCatSubmit(e){
+    e.preventDefault();const name=$('cat-name').value.trim(),color=$('cat-color').value;if(!name)return;
+    if(editingCatId){await fetch(API_C,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'edit',id:editingCatId,name,color})});toast('Setor atualizado!');editingCatId=null;$('cat-form-btn').textContent='Adicionar';}
+    else{await fetch(API_C,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',name,color})});toast('Setor criado!');}
+    $('cat-name').value='';$('cat-color').value='#3B82F6';await loadCategories();renderCatList();
+}
+function renderCatList(){
+    if(!categories.length){$('cat-list').innerHTML='<p style="text-align:center;color:var(--text-soft);padding:20px">Nenhum setor.</p>';return;}
+    $('cat-list').innerHTML=categories.map(c=>`<li class="cat-item"><span class="cat-dot" style="background:${c.color}"></span><span class="cat-item-name">${esc(c.name)}</span><div class="cat-item-actions"><button class="cat-item-btn edit" onclick="startEditCat(${c.id})">✎</button><button class="cat-item-btn del" onclick="deleteCat(${c.id})">✕</button></div></li>`).join('');
+}
+function startEditCat(id){const c=getCat(id);if(!c)return;editingCatId=id;$('cat-name').value=c.name;$('cat-color').value=c.color;$('cat-form-btn').textContent='Salvar';}
+async function deleteCat(id){showConfirm('Remover setor?',async()=>{await fetch(API_C,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',id})});await loadCategories();renderCatList();toast('Removido');});}
+
+// ================================================================
+//  WORKERS MODAL
+// ================================================================
+function openWorkersModal(){$('modal-workers').classList.add('open');renderWorkerList();}
+function closeWorkersModal(){$('modal-workers').classList.remove('open');}
+async function handleWorkerSubmit(e){
+    e.preventDefault();const name=$('worker-name').value.trim();if(!name)return;
+    const d=await(await fetch(API_W,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',name})})).json();
+    toast(d.success?'Adicionado!':d.error||'Erro');$('worker-name').value='';await loadWorkers();renderWorkerList();
+}
+function renderWorkerList(){
+    if(!workers.length){$('worker-list').innerHTML='<p style="text-align:center;color:var(--text-soft);padding:20px">Nenhum funcionário.</p>';return;}
+    $('worker-list').innerHTML=workers.map(w=>`<li class="cat-item"><span class="cat-dot" style="background:var(--primary)"></span><span class="cat-item-name">${esc(w.name)}</span><div class="cat-item-actions"><button class="cat-item-btn del" onclick="deleteWorker(${w.id})">✕</button></div></li>`).join('');
+}
+async function deleteWorker(id){showConfirm('Remover?',async()=>{await fetch(API_W,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',id})});await loadWorkers();renderWorkerList();toast('Removido');});}
+
+// ================================================================
+//  GROUPS MODAL
+// ================================================================
+function openGroupsModal(){editingGroupId=null;$('group-form-btn').textContent='Adicionar';$('group-name').value='';$('modal-groups').classList.add('open');renderGroupList();}
+function closeGroupsModal(){$('modal-groups').classList.remove('open');editingGroupId=null;loadGroups().then(()=>loadTasks());}
+
+async function handleGroupSubmit(e){
+    e.preventDefault();const name=$('group-name').value.trim();if(!name)return;
+    if(editingGroupId){await fetch(API_G,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'edit',id:editingGroupId,name})});toast('Grupo atualizado!');editingGroupId=null;$('group-form-btn').textContent='Adicionar';}
+    else{await fetch(API_G,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',name})});toast('Grupo criado!');}
+    $('group-name').value='';await loadGroups();renderGroupList();
+}
+function renderGroupList(){
+    if(!groups.length){$('group-list').innerHTML='<p style="text-align:center;color:var(--text-soft);padding:20px">Nenhum grupo.</p>';return;}
+    $('group-list').innerHTML=groups.map(g=>`<li class="cat-item"><span class="cat-dot" style="background:var(--green)"></span><span class="cat-item-name">${esc(g.name)}</span><div class="cat-item-actions"><button class="cat-item-btn edit" onclick="startEditGroup(${g.id})">✎</button><button class="cat-item-btn del" onclick="deleteGroup(${g.id})">✕</button></div></li>`).join('');
+}
+function startEditGroup(id){const g=getGroup(id);if(!g)return;editingGroupId=id;$('group-name').value=g.name;$('group-form-btn').textContent='Salvar';}
+async function deleteGroup(id){showConfirm('Remover grupo?',async()=>{await fetch(API_G,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',id})});await loadGroups();renderGroupList();toast('Removido');});}
+
+// ================================================================
+//  RECURRING MODAL
+// ================================================================
+const DAY_NAMES = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
+function openRecurringModal(){
+    $('rec-title').value='';$('rec-priority').value='normal';$('rec-form-btn').textContent='Adicionar recorrente';
+    setTimeBtn($('rec-time'), null);
+    populateSelect($('rec-category'),categories,'name','');populateGroupSelect($('rec-group'),'');
+    $('rec-form').querySelectorAll('.day-check input').forEach((cb,i)=>cb.checked=[1,2,3,4,5].includes(i));
+    $('modal-recurring').classList.add('open');
+    renderRecList();
+}
+function closeRecurringModal(){$('modal-recurring').classList.remove('open');loadTasks();}
+
+async function handleRecSubmit(e){
+    e.preventDefault();const title=$('rec-title').value.trim();if(!title)return;
+    const days=[...$('rec-form').querySelectorAll('.day-check input:checked')].map(cb=>cb.value).join(',');
+    if(!days){toast('Selecione ao menos um dia');return;}
+    await fetch(API_R,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+        action:'add',title,category_id:$('rec-category').value||null,group_id:$('rec-group').value||null,
+        priority:$('rec-priority').value||'normal',scheduled_time:getTimeVal($('rec-time')),days_of_week:days
+    })});toast('Recorrente criada!');$('rec-title').value='';setTimeBtn($('rec-time'),null);renderRecList();
+}
+
+async function renderRecList(){
+    const data=await(await fetch(API_R)).json();const items=data.recurring;
+    if(!items.length){$('rec-list').innerHTML='<p style="text-align:center;color:var(--text-soft);padding:20px">Nenhuma tarefa recorrente.</p>';return;}
+    $('rec-list').innerHTML=items.map(r=>{
+        const days=r.days_of_week.split(',').map(Number);
+        const daysHtml=DAY_NAMES.map((n,i)=>`<span class="rec-day-dot ${days.includes(i)?'on':'off'}">${n}</span>`).join('');
+        let meta='';
+        if(r.cat_name)meta+=`<span class="cat-badge" style="background:${r.cat_color}20;color:${r.cat_color}">${r.cat_name}</span>`;
+        if(r.group_name)meta+=`<span class="cat-badge" style="background:var(--green-lt);color:var(--green)">${r.group_name}</span>`;
+        if(r.priority==='high')meta+=`<span class="pri-badge high">Alta</span>`;
+        if(r.priority==='low')meta+=`<span class="pri-badge low">Baixa</span>`;
+        if(r.scheduled_time)meta+=`<span class="time-badge">🕐 ${formatTime(r.scheduled_time)}</span>`;
+        return `<li class="rec-item ${r.active?'':'inactive'}">
+            <div class="rec-item-header"><span class="rec-item-title">${esc(r.title)}</span>
+                <div class="rec-item-actions"><button class="cat-item-btn edit" onclick="toggleRec(${r.id})" title="${r.active?'Desativar':'Ativar'}">${r.active?'⏸':'▶'}</button>
+                    <button class="cat-item-btn del" onclick="deleteRec(${r.id})" title="Remover">✕</button></div></div>
+            <div class="rec-item-meta">${meta}<div class="rec-days-display">${daysHtml}</div></div></li>`;
+    }).join('');
+}
+async function toggleRec(id){await fetch(API_R,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'toggle',id})});renderRecList();toast('Atualizado');}
+async function deleteRec(id){showConfirm('Remover recorrente?',async()=>{await fetch(API_R,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',id})});renderRecList();toast('Removida');});}
+
+// ================================================================
+//  HELPERS
+// ================================================================
+function todayStr(){return toStr(new Date());}
+function toStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function offsetDate(s,n){const d=new Date(s+'T12:00:00');d.setDate(d.getDate()+n);return toStr(d);}
+function daysDiff(a,b){return Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/86400000);}
+function formatDateBR(s){const[y,m,d]=s.split('-');const M=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];const D=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];return`${D[new Date(+y,+m-1,+d).getDay()]}, ${+d} de ${M[+m-1]}`;}
+function formatTime(t){if(!t)return'';const[h,m]=t.split(':');return`${h}:${m}`;}
+function formatTimeFromDT(dt){if(!dt)return'';const p=dt.split(' ');return p[1]?p[1].substring(0,5):'';}
+function formatDateTime(dt){if(!dt)return'';const[d,t]=dt.split(' ');const[y,m,dd]=d.split('-');return`${dd}/${m}/${y} às ${t?t.substring(0,5):''}`;}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+
+function toast(msg){let el=$('toast');if(!el){el=document.createElement('div');el.id='toast';el.className='toast';document.body.appendChild(el);}el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2000);}
+
+function showConfirm(msg,onYes){const old=$('confirm-overlay');if(old)old.remove();const o=document.createElement('div');o.id='confirm-overlay';o.className='confirm-overlay';
+    o.innerHTML=`<div class="confirm-box"><p class="confirm-msg">${msg}</p><div class="confirm-actions"><button class="confirm-btn cancel" id="confirm-no">Cancelar</button><button class="confirm-btn danger" id="confirm-yes">Confirmar</button></div></div>`;
+    document.body.appendChild(o);requestAnimationFrame(()=>o.classList.add('show'));
+    const close=()=>{o.classList.remove('show');setTimeout(()=>o.remove(),200);};$('confirm-no').onclick=close;$('confirm-yes').onclick=()=>{close();onYes();};o.addEventListener('click',e=>{if(e.target===o)close();});}
+
+
+
+================================================================================
+ARQUIVO: checklist\config\database.php
+================================================================================
+
+<?php
+
+function getDB(): PDO
+{
+    static $pdo = null;
+
+    if ($pdo === null) {
+        $dbPath = __DIR__ . '/../data/checklist.db';
+        $dir    = dirname($dbPath);
+
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        $pdo = new PDO("sqlite:$dbPath", null, null, [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        ]);
+
+        $pdo->exec("PRAGMA journal_mode=WAL");
+        $pdo->exec("PRAGMA foreign_keys=ON");
+
+        migrate($pdo);
+    }
+
+    return $pdo;
+}
+
+function migrate(PDO $pdo): void
+{
+    // Categories
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS categories (
+            id    INTEGER PRIMARY KEY AUTOINCREMENT,
+            name  TEXT NOT NULL UNIQUE,
+            color TEXT NOT NULL DEFAULT '#64748B',
+            sort_order INTEGER NOT NULL DEFAULT 0
+        )
+    ");
+
+    // Tasks
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS tasks (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            title       TEXT    NOT NULL,
+            done        INTEGER NOT NULL DEFAULT 0,
+            task_date   TEXT    NOT NULL,
+            category_id INTEGER DEFAULT NULL,
+            created_at  TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
+            FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
+        )
+    ");
+
+    // Add category_id if missing (upgrade from v1-v3)
+    $cols = $pdo->query("PRAGMA table_info(tasks)")->fetchAll();
+    $colNames = array_column($cols, 'name');
+
+    if (!in_array('category_id', $colNames)) {
+        $pdo->exec("ALTER TABLE tasks ADD COLUMN category_id INTEGER DEFAULT NULL REFERENCES categories(id) ON DELETE SET NULL");
+    }
+    if (!in_array('priority', $colNames)) {
+        $pdo->exec("ALTER TABLE tasks ADD COLUMN priority TEXT NOT NULL DEFAULT 'normal'");
+    }
+    if (!in_array('scheduled_time', $colNames)) {
+        $pdo->exec("ALTER TABLE tasks ADD COLUMN scheduled_time TEXT DEFAULT NULL");
+    }
+    if (!in_array('done_by', $colNames)) {
+        $pdo->exec("ALTER TABLE tasks ADD COLUMN done_by TEXT DEFAULT NULL");
+    }
+    if (!in_array('done_at', $colNames)) {
+        $pdo->exec("ALTER TABLE tasks ADD COLUMN done_at TEXT DEFAULT NULL");
+    }
+
+    // Workers
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS workers (
+            id   INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE
+        )
+    ");
+
+    // Task logs
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS task_logs (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_id    INTEGER NOT NULL,
+            action     TEXT NOT NULL,
+            worker     TEXT DEFAULT NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+            FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+        )
+    ");
+
+    // Task groups
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS task_groups (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            name       TEXT NOT NULL,
+            sort_order INTEGER NOT NULL DEFAULT 0
+        )
+    ");
+
+    // Recurring tasks
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS recurring_tasks (
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            title          TEXT    NOT NULL,
+            category_id    INTEGER DEFAULT NULL,
+            group_id       INTEGER DEFAULT NULL,
+            priority       TEXT    NOT NULL DEFAULT 'normal',
+            scheduled_time TEXT    DEFAULT NULL,
+            days_of_week   TEXT    NOT NULL DEFAULT '1,2,3,4,5',
+            active         INTEGER NOT NULL DEFAULT 1,
+            FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
+            FOREIGN KEY (group_id) REFERENCES task_groups(id) ON DELETE SET NULL
+        )
+    ");
+
+    // group_id on tasks
+    if (!in_array('group_id', $colNames)) {
+        $pdo->exec("ALTER TABLE tasks ADD COLUMN group_id INTEGER DEFAULT NULL REFERENCES task_groups(id) ON DELETE SET NULL");
+    }
+    // recurring_id on tasks (to avoid duplicates)
+    if (!in_array('recurring_id', $colNames)) {
+        $pdo->exec("ALTER TABLE tasks ADD COLUMN recurring_id INTEGER DEFAULT NULL");
+    }
+
+    // Seed default categories if empty
+    $count = (int) $pdo->query("SELECT COUNT(*) FROM categories")->fetchColumn();
+    if ($count === 0) {
+        $defaults = [
+            ['Padaria',     '#F59E0B', 1],
+            ['Açougue',     '#EF4444', 2],
+            ['Hortifrúti',  '#22C55E', 3],
+            ['Estoque',     '#3B82F6', 4],
+            ['Limpeza',     '#8B5CF6', 5],
+            ['Caixa',       '#EC4899', 6],
+            ['Geral',       '#64748B', 7],
+        ];
+        $stmt = $pdo->prepare("INSERT INTO categories (name, color, sort_order) VALUES (?, ?, ?)");
+        foreach ($defaults as $d) {
+            $stmt->execute($d);
+        }
+    }
+}
+
+function today(): string
+{
+    return date('Y-m-d');
+}
+
+
+
+================================================================================
+ARQUIVO: checklist\includes\footer.php
+================================================================================
+
+</main>
+
+<script src="assets/js/app.js"></script>
+</body>
+</html>
+
+
+
+================================================================================
+ARQUIVO: checklist\includes\header.php
+================================================================================
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checklist Diário</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<header class="app-header">
+    <div class="container">
+        <div class="header-row">
+            <h1 class="logo">
+                <span class="logo-icon">✅</span>
+                Checklist Diário
+            </h1>
+            <div class="header-actions">
+                <button class="header-btn" id="btn-recurring" title="Tarefas Recorrentes">🔄</button>
+                <button class="header-btn" id="btn-groups" title="Grupos">📁</button>
+                <button class="header-btn" id="btn-workers" title="Funcionários">👤</button>
+                <button class="header-btn" id="btn-settings" title="Setores">⚙</button>
+            </div>
+        </div>
+    </div>
+</header>
+
+<main class="container">
+
+
